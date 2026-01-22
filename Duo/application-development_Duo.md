@@ -25,18 +25,25 @@ riscv64-plct-linux-gnu-gcc -v
 riscv64-plct-linux-gnu-gcc blink.c -o blink-ruyi -lwiringx
 ```
 
+
+将GCC构建的二进制传输至开发板
+
+```
+scp ../blink-ruyi root@192.168.42.1:~
+```
+
+返回上级目录并退出ruyi GCC虚拟环境
+
+```
+cd ..; ruyi-deactivate
+```
+
 禁用自带的闪烁脚本
 
 ```bash
 
 mv /mnt/system/blink.sh /mnt/system/blink.sh_backup && sync && reboot
 
-```
-
-将GCC构建的二进制传输至开发板
-
-```
-scp ../blink-ruyi root@192.168.42.1:~
 ```
 
 SSH连接到开发板并执行编译好的二进制
@@ -155,7 +162,7 @@ pin 3 -> duty 500
 
 duty cycle 为 50%
 
-![pwm](./images/pwm.png)
+![pwm](./images/PWM.png)
 
   
 

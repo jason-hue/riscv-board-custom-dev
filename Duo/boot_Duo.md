@@ -62,7 +62,7 @@ sudo cp -v ruyi-0.41.0.riscv64 /usr/local/bin/ruyi
 
 ### 使用 ruyi 安装工具链
 
-使用 Ruyi 安装 GCC 和 LLVM 工具链
+使用 ruyi 安装 GCC 和 LLVM 工具链
 ```
 ruyi update
 

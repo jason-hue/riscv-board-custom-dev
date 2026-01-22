@@ -21,17 +21,46 @@ ruyi venv -t toolchain/gnu-plct manual venv-gnu-plct
 riscv64-plct-linux-gnu-gcc -v
 ```
 
-编译示例程序
+位于 [hello-world](https://github.com/milkv-duo/duo-examples/tree/main/hello-world) 中，使用 ruyi 工具链编译获得产物 `helloworld-ruyi` 
+
 ```
-gcc main.c -lwiringx -o wiringx_gpio_demo
+riscv64-plct-linux-gnu-gcc hello-world.c -o hello-world-ruyi -lwiringx
 ```
 
-运行示例
+
+  将GCC构建的二进制传输至开发板
+
 ```
-./wiringx_gpio_demo
+scp ../hello-world-ruyi root@192.168.42.1:~
 ```
 
-程序将控制指定 GPIO 引脚输出高低电平，  用于验证 wiringX 功能是否正常。
+返回上级目录并退出ruyi GCC虚拟环境
+
+```
+cd ..; ruyi-deactivate
+```
+
+SSH连接到开发板并执行编译好的二进制
+
+```
+ssh root@192.168.42.1
+
+#如提示Host key verification failed：
+
+#打开当前用户目录下的 .ssh/known_hosts目录，删除192.168.42.1对应行
+
+#登录密码为milkv，提示Are you sure you want to continue connecting时输入yes回车即可
+
+./hello-world-ruyi
+```
+
+
+运行后输出如下。
+
+```
+Hello, World!
+```
+
 
 返回上级目录并退出ruyi GCC虚拟环境
 
