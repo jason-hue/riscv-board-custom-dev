@@ -97,7 +97,7 @@ export TOOLCHAIN_PREFIX=riscv64-unknown-linux-musl-
 export SYSROOT=$(pwd)/../../../venv/sysroot
 
 # 使用 milkv-duo-examples 提供的库 and 头文件进行编译
-# 这里的路径需根据实际 ruyi 提取位置调整，本测试中直接引用提取出的目录
+# 这里的路径需根据实际 ruyi 提取位置调整，本教程中直接引用提取出的目录
 export CFLAGS="-mcpu=c906fdv -march=rv64imafdcv0p7xthead -mcmodel=medany -mabi=lp64d -I$(pwd)/../../../include/system"
 export LDFLAGS="-L$(pwd)/../../../libs/system/musl_riscv64"
 
