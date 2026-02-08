@@ -1,6 +1,6 @@
 # 使用 RuyiSDK 编译 Milk-V DuoS 示例程序教程
 
-本教程介绍如何脱离官方的 `envsetup.sh` 脚本，使用 **RuyiSDK** 提供的工具链来编译 `duo-examples`。这种方法更加灵活，且可以使用更新版本的 GCC 工具链（如 GCC 15）。
+本教程介绍如何脱离官方的 `envsetup.sh` 脚本，使用 **RuyiSDK** 提供的工具链来编译 `duo-examples`。这种方法更加灵活，且可以使用更新版本的 GCC 工具链。
 
 ## 1. 准备工作
 
@@ -53,7 +53,7 @@ Ruyi 提供了 `venv` 功能，可以自动配置编译参数（CFLAGS/LDFLAGS�
     ruyi venv -t gnu-milkv-milkv-duo-musl-bin milkv-duo ~/venv-duos-musl
     ```
 
-### 激活环境并编译
+### 激活环境并编译 (示例：Hello World)
 
 根据您的目标系统选择对应的激活和编译方案：
 
@@ -62,17 +62,11 @@ Ruyi 提供了 `venv` 功能，可以自动配置编译参数（CFLAGS/LDFLAGS�
 # 激活环境
 source ~/venv-duos-plct/bin/ruyi-activate
 
-# 进入示例目录
+# 编译 hello-world
 cd duo-examples/hello-world
-
-# 设置交叉编译前缀
 export TOOLCHAIN_PREFIX=riscv64-plct-linux-gnu-
-
-# 补充项目路径（ruyi 已自动设置基础 CFLAGS）
 export CFLAGS="${CFLAGS} -I$(pwd)/../include/system"
 export LDFLAGS="${LDFLAGS} -L$(pwd)/../libs/system/musl_riscv64"
-
-# 编译
 make
 ```
 
@@ -81,17 +75,59 @@ make
 # 激活环境
 source ~/venv-duos-musl/bin/ruyi-activate
 
-# 进入示例目录
+# 编译 hello-world
 cd duo-examples/hello-world
-
-# 设置交叉编译前缀
 export TOOLCHAIN_PREFIX=riscv64-unknown-linux-musl-
+export CFLAGS="${CFLAGS} -I$(pwd)/../include/system"
+export LDFLAGS="${LDFLAGS} -L$(pwd)/../libs/system/musl_riscv64"
+make
+```
 
-# 补充项目路径
+---
+
+## 4. 进阶示例：控制板载 LED 闪烁 (Blink)
+
+`blink` 示例演示了如何使用 **wiringX** 库操作 GPIO。
+
+### 禁用系统默认闪烁脚本
+DuoS 的官方固件默认上电后 LED 会自动闪烁。在运行我们编译的 `blink` 程序前，需要先将其禁用：
+
+```bash
+# 在 DuoS 终端执行
+mv /mnt/system/blink.sh /mnt/system/blink.sh_backup && sync
+# 重启开发板以生效
+reboot
+```
+*如需恢复默认闪烁，将文件名改回并重启即可。*
+
+### 适配 DuoS 硬件
+由于 `duo-examples` 默认针对 Duo 编写，DuoS 的 LED 引脚和平台名称不同。编译前需修改 `blink/blink.c`：
+*   **LED 引脚**：DuoS 为 `0`
+*   **平台名称**：DuoS 为 `milkv_duos`
+
+修改后的代码片段：
+```c
+int DUO_LED = 0;
+if(wiringXSetup("milkv_duos", NULL) == -1) { ... }
+```
+
+### 编译 Blink 程序
+> **⚠️ 重要兼容性提示**：`duo-examples` 提供的 `libwiringx.so` 是针对 **musl** 链接的。
+> *   **方案 A (Glibc)** 编译此程序时，由于库不匹配，链接阶段会报错。
+> *   **无论您的目标系统是 Debian 还是 Buildroot，建议统一使用方案 B (Musl 工具链) 编译 blink。** 编译出的二进制文件在 Debian 下通常可以直接运行。
+
+#### 方案 B：针对 DuoS (统一推荐方案)
+```bash
+# 激活 Musl 环境
+source ~/venv-duos-musl/bin/ruyi-activate
+
+# 进入目录并编译
+cd duo-examples/blink
+export TOOLCHAIN_PREFIX=riscv64-unknown-linux-musl-
 export CFLAGS="${CFLAGS} -I$(pwd)/../include/system"
 export LDFLAGS="${LDFLAGS} -L$(pwd)/../libs/system/musl_riscv64"
 
-# 编译
+make clean
 make
 ```
 
@@ -100,59 +136,32 @@ make
 ruyi-deactivate
 ```
 
-
----
-
-## 4. 编译示例程序
-
-以 `hello-world` 为例：
-
-```bash
-cd hello-world
-make clean
-make
-```
-
-编译完成后，会在当前目录下生成 `helloworld` 可执行文件。
-
 ---
 
 ## 5. 部署与登录开发板 (两种方法)
 
 根据您使用的系统版本（Debian 或 Buildroot），登录和传输文件的方法有所不同。
 
-### 方法 A：通过串口 (Serial) 登录 —— Debian 系统推荐
-部分 Debian 镜像默认不开启 USB-NCM 网络，因此初始登录和操作通常通过串口进行。
+### 方法 A：通过串口 (Serial) 传输 —— Debian 系统推荐
+由于部分 Debian 镜像默认不开启网络，建议使用物理介质传输。
 
-1.  **硬件连接**：
-    *   使用 USB 转 UART 调试器。
-    *   连接 DuoS 串口：开发板 GND -> 调试器 GND, 开发板 TX -> 调试器 RX, 开发板 RX -> 调试器 TX。
-2.  **启动终端连接**：
-    *   在 Linux 主机上，可以使用 `minicom`、`tio` 或 `screen`。
-    *   命令示例：`minicom -D /dev/ttyACM0 -c on` (设备路径根据实际情况可能是 `/dev/ttyUSB0`)。
-3.  **登录系统**：
-    *   默认用户名：`root`
-    *   默认密码：`milkv`
-4.  **传输文件**：
-    由于没有网络，您可以将编译好的二进制文件拷贝到 microSD 卡的 FAT 分区，然后在开发板上挂载该分区：
+1.  **准备文件**：将编译好的程序（如 `helloworld` 或 `blink`）拷贝到 microSD 卡的 FAT 分区。
+2.  **挂载并拷贝**：
+    在 DuoS 串口终端执行：
     ```bash
     [root@milkv]~# mount /dev/mmcblk0p1 /mnt
-    [root@milkv]~# cp /mnt/helloworld /root/
+    [root@milkv]~# cp /mnt/helloworld /root/  # 或 cp /mnt/blink /root/
     ```
 
-### 方法 B：通过网络 (SSH/USB-NCM) —— Buildroot 系统推荐
-Buildroot 系统默认开启了 USB-NCM 虚拟网卡，电脑识别后可直接通过网络传输。
+### 方法 B：通过网络 (SSH/SCP) 传输 —— Buildroot 系统推荐
+Buildroot 系统默认开启了 USB-NCM 虚拟网卡 (IP: 192.168.42.1)。
 
-1.  **检查连接**：
-    *   确保电脑识别到新网卡，并尝试：`ping 192.168.42.1`。
-2.  **传输文件**：
+1.  **传输文件**：
     ```bash
-    scp helloworld root@192.168.42.1:/root/
-    ```
-3.  **SSH 登录**：
-    ```bash
-    ssh root@192.168.42.1
-    # 密码：milkv
+    # 传输 hello-world
+    scp hello-world/helloworld root@192.168.42.1:/root/
+    # 传输 blink
+    scp blink/blink root@192.168.42.1:/root/
     ```
 
 ---
@@ -161,8 +170,14 @@ Buildroot 系统默认开启了 USB-NCM 虚拟网卡，电脑识别后可直接�
 
 在开发板终端中运行：
 
+### 运行 Hello World
 ```bash
-[root@milkv]~# chmod +x helloworld
-[root@milkv]~# ./helloworld
-Hello, World!
+chmod +x helloworld
+./helloworld
+```
+
+### 运行 Blink
+```bash
+chmod +x blink
+./blink
 ```
