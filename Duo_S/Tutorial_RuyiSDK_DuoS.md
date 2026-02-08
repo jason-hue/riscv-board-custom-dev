@@ -7,7 +7,7 @@
 ### 安装 Ruyi 包管理器
 如果尚未安装 Ruyi，请执行以下命令：
 ```bash
-wget https://mirror.iscas.ac.cn/ruyisdk/ruyi/tags/0.41.0/ruyi-0.41.0.amd64 -O /usr/local/bin/ruyi
+wget https://mirror.iscas.ac.cn/ruyisdk/ruyi/tags/0.45.0/ruyi-0.45.0.amd64 -O /usr/local/bin/ruyi
 chmod +x /usr/local/bin/ruyi
 ```
 
